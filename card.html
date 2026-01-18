@@ -1,0 +1,537 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Credit Card Strategy Optimizer (1–5 Cards)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    p { margin: 6px 0 14px; opacity: 0.9; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .controls { padding: 12px; border: 1px solid rgba(127,127,127,0.35); border-radius: 12px; }
+    textarea {
+      width: 100%;
+      height: 320px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(127,127,127,0.35);
+      box-sizing: border-box;
+    }
+    button, select, input {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(127,127,127,0.35);
+      background: transparent;
+      color: inherit;
+    }
+    button { cursor: pointer; }
+    button.primary { border-color: rgba(80,140,255,0.8); }
+    .hint { font-size: 12px; opacity: 0.85; }
+    .error { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,80,80,0.7); margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(127,127,127,0.25); vertical-align: top; }
+    th { font-size: 12px; opacity: 0.9; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+    details { margin-top: 6px; }
+    summary { cursor: pointer; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(127,127,127,0.35); font-size: 12px; opacity: 0.9; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 980px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Best 1 / 2 / 3 / 4 / 5 Card Strategies</h1>
+    <p>
+      Edit the JSON, then click <b>Run</b>. For each combo, the optimizer routes each category to the best card in the combo.
+      <span class="pill">Supports “mutually exclusive” card variants</span>
+    </p>
+
+```
+<div class="grid">
+  <div class="controls">
+    <div class="row" style="margin-bottom:10px;">
+      <label class="row" style="gap:8px;">
+        Max cards:
+        <select id="maxCards">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+        </select>
+      </label>
+
+      <label class="row" style="gap:8px;">
+        Show top:
+        <select id="topN">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="25">25</option>
+        </select>
+      </label>
+
+      <button class="primary" id="runBtn">Run</button>
+      <button id="addCardBtn" title="Appends a template card to the JSON">Add new card</button>
+      <button id="resetBtn" title="Restore your current card list">Reset to your data</button>
+    </div>
+
+    <div class="hint">
+      <b>Easy add-card workflow:</b> click “Add new card”, fill in name, then edit multipliers/fees.
+      <br/>
+      <b>Mutual exclusivity:</b> give variants the same <span class="mono">exclusiveGroup</span> (example: “Bilt Obsidian” has two variants below).
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="hint" style="margin-bottom:10px;">
+      Notes:
+      <ul style="margin:8px 0 0 18px;">
+        <li><b>monthlyNetFee</b> is already <span class="mono">(annualFee - valueOfFee)/12</span>.</li>
+        <li><b>pointValue</b> is the $ value per point (you set 0.01 everywhere).</li>
+        <li>If a card has no multiplier for a category, set it to 0.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<textarea id="jsonInput" spellcheck="false"></textarea>
+<div id="msg"></div>
+<div id="out"></div>
+```
+
+  </div>
+
+<script>
+/**
+ * Your card list rewritten from the sheet you pasted.
+ * I kept Bilt as separate physical cards, BUT your Obsidian "Dining" vs "Grocery" columns
+ * look like mutually exclusive configurations, so I modeled them as variants using exclusiveGroup.
+ */
+const DEFAULT_DATA = {
+  categories: [
+    { name: "Whole Foods", monthlySpend: 500 },
+    { name: "Costco", monthlySpend: 500 },
+    { name: "Other Grocery", monthlySpend: 250 },
+    { name: "Amazon", monthlySpend: 250 },
+    { name: "Online Shopping", monthlySpend: 250 },
+    { name: "Dining", monthlySpend: 500 },
+    { name: "Airlines", monthlySpend: 100 },
+    { name: "Hotel", monthlySpend: 100 },
+    { name: "Rideshare", monthlySpend: 30 },
+    { name: "Travel Other", monthlySpend: 50 },
+    { name: "Misc", monthlySpend: 200 },
+    { name: "Rent", monthlySpend: 5200 }
+  ],
+  cards: [
+    {
+      name: "BofA CCC (Online Shopping)",
+      pointValue: 0.01,
+      monthlyNetFee: 0,
+      multipliers: {
+        "Whole Foods": 3.5, "Costco": 3.5, "Other Grocery": 3.5,
+        "Amazon": 5.25, "Online Shopping": 5.25,
+        "Dining": 1.75,
+        "Airlines": 1.75, "Hotel": 1.75, "Rideshare": 1.75, "Travel Other": 1.75,
+        "Misc": 1.75,
+        "Rent": 0
+      }
+    },
+    {
+      name: "BofA Premium Rewards",
+      pointValue: 0.01,
+      monthlyNetFee: 3.75, // (95 - 50)/12
+      multipliers: {
+        "Whole Foods": 2.625, "Costco": 2.625, "Other Grocery": 2.625,
+        "Amazon": 2.625, "Online Shopping": 2.625,
+        "Dining": 3.5,
+        "Airlines": 3.5, "Hotel": 3.5, "Rideshare": 3.5, "Travel Other": 3.5,
+        "Misc": 2.625,
+        "Rent": 0
+      }
+    },
+    {
+      name: "Bilt Blue",
+      exclusiveGroup: "Bilt",
+      pointValue: 0.01,
+      monthlyNetFee: 0,
+      multipliers: {
+        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 1,
+        "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+        "Misc": 1,
+        "Rent": 1.33
+      }
+    },
+
+    // All Bilt cards are mutually exclusive. Only one can be chosen in a strategy.
+    {
+      name: "Bilt Obsidian (Dining focus)",
+      exclusiveGroup: "Bilt",
+      pointValue: 0.01,
+      monthlyNetFee: 5.833333333333333, // (95 - 25)/12
+      multipliers: {
+        "Whole Foods": 1, "Costco": 0, "Other Grocery": 1,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 3,
+        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+        "Misc": 1,
+        "Rent": 1.33
+      }
+    },
+    {
+      name: "Bilt Obsidian (Grocery focus)",
+      exclusiveGroup: "Bilt",
+      pointValue: 0.01,
+      monthlyNetFee: 5.833333333333333, // (95 - 25)/12
+      multipliers: {
+        "Whole Foods": 3, "Costco": 0, "Other Grocery": 3,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 1,
+        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+        "Misc": 1,
+        "Rent": 1.33
+      }
+    },
+
+    {
+      name: "Bilt Palladium",
+      exclusiveGroup: "Bilt",
+      pointValue: 0.01,
+      monthlyNetFee: 32.916666666666664, // (495 - 100)/12
+      multipliers: {
+        "Whole Foods": 2, "Costco": 0, "Other Grocery": 2,
+        "Amazon": 2, "Online Shopping": 2,
+        "Dining": 2,
+        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+        "Misc": 1,
+        "Rent": 1.33
+      }
+    },
+    {
+      name: "Amazon",
+      pointValue: 0.01,
+      monthlyNetFee: 0,
+      multipliers: {
+        "Whole Foods": 5, "Costco": 1, "Other Grocery": 1,
+        "Amazon": 5, "Online Shopping": 1,
+        "Dining": 2,
+        "Airlines": 1, "Hotel": 1, "Rideshare": 2, "Travel Other": 1,
+        "Misc": 1,
+        "Rent": 0
+      }
+    },
+    {
+      name: "Amex Plat",
+      pointValue: 0.01,
+      monthlyNetFee: 0, // (795 - 795)/12
+      multipliers: {
+        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 1,
+        "Airlines": 5, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+        "Misc": 1,
+        "Rent": 0
+      }
+    },
+    {
+      name: "Amex Gold",
+      pointValue: 0.01,
+      monthlyNetFee: 14.583333333333334, // (325 - 150)/12
+      multipliers: {
+        "Whole Foods": 4, "Costco": 0, "Other Grocery": 4,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 4,
+        "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+        "Misc": 1,
+        "Rent": 0
+      }
+    },
+    {
+      name: "CSP",
+      pointValue: 0.01,
+      monthlyNetFee: 0, // (95 - 95)/12
+      multipliers: {
+        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+        "Amazon": 1, "Online Shopping": 1,
+        "Dining": 3,
+        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+        "Misc": 1,
+        "Rent": 0
+      }
+    }
+  ]
+};
+
+const el = (id) => document.getElementById(id);
+const fmtMoney = (n) =>
+  (Math.round(n * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function setMsg(html, isError=false) {
+  el("msg").innerHTML = isError ? `<div class="error">${html}</div>` : `<div class="hint" style="margin-top:12px;">${html}</div>`;
+}
+
+function combinations(items, k) {
+  const res = [];
+  const path = [];
+  function rec(start) {
+    if (path.length === k) { res.push(path.slice()); return; }
+    for (let i = start; i < items.length; i++) {
+      path.push(items[i]);
+      rec(i + 1);
+      path.pop();
+    }
+  }
+  rec(0);
+  return res;
+}
+
+function violatesExclusiveGroup(combo) {
+  const seen = new Set();
+  for (const c of combo) {
+    if (!c.exclusiveGroup) continue;
+    if (seen.has(c.exclusiveGroup)) return true;
+    seen.add(c.exclusiveGroup);
+  }
+  return false;
+}
+
+function scoreCombo(combo, categories) {
+  let earn = 0;
+  const assignment = [];
+
+  // First pass: assign non-rent categories to best cards
+  for (const cat of categories) {
+    let best = { cardName: null, mult: 0, value: -Infinity };
+    for (const card of combo) {
+      const pv = Number(card.pointValue ?? 0);
+      const mult = Number(card.multipliers?.[cat.name] ?? 0);
+      const v = Number(cat.monthlySpend ?? 0) * mult * pv;
+      if (v > best.value) best = { cardName: card.name, mult, value: v };
+    }
+    const v = Math.max(0, best.value);
+    earn += v;
+    assignment.push({
+      category: cat.name,
+      spend: Number(cat.monthlySpend ?? 0),
+      bestCard: best.cardName,
+      mult: best.mult,
+      value: v
+    });
+  }
+
+  // Second pass: adjust rent earnings for Bilt cards based on non-rent spending
+  const rentCategory = assignment.find(a => a.category === "Rent");
+  if (rentCategory) {
+    const rentCategoryData = categories.find(c => c.name === "Rent");
+    const totalRentSpend = Number(rentCategoryData?.monthlySpend ?? 0);
+
+    // Calculate non-rent spending per card
+    const spendPerCard = {};
+    for (const a of assignment) {
+      if (a.category !== "Rent" && a.bestCard) {
+        spendPerCard[a.bestCard] = (spendPerCard[a.bestCard] || 0) + a.spend;
+      }
+    }
+
+    // Find if rent is assigned to a Bilt card
+    const rentCard = combo.find(c => c.name === rentCategory.bestCard);
+    const isBiltCard = rentCard && rentCard.name.startsWith("Bilt");
+
+    if (isBiltCard) {
+      const nonRentSpending = spendPerCard[rentCard.name] || 0;
+      const cappedRentSpend = Math.min(totalRentSpend, nonRentSpending);
+      const rentMult = Number(rentCard.multipliers?.["Rent"] ?? 0);
+      const rentPV = Number(rentCard.pointValue ?? 0);
+      const newRentValue = cappedRentSpend * rentMult * rentPV;
+
+      // Adjust earnings
+      earn = earn - rentCategory.value + newRentValue;
+      rentCategory.value = newRentValue;
+      rentCategory.spend = cappedRentSpend;
+    }
+  }
+
+  const cost = combo.reduce((s, c) => s + Number(c.monthlyNetFee ?? 0), 0);
+  return { earn, cost, net: earn - cost, assignment };
+}
+
+function renderResults(results, topN) {
+  const out = el("out");
+  out.innerHTML = "";
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Cards</th>
+        <th>Earn / mo</th>
+        <th>Fees / mo</th>
+        <th>Net / mo</th>
+        <th>Breakdown</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector("tbody");
+
+  results.slice(0, topN).forEach((r, i) => {
+    const tr = document.createElement("tr");
+
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Show category routing";
+    details.appendChild(summary);
+
+    const inner = document.createElement("table");
+    inner.innerHTML = `
+      <thead>
+        <tr>
+          <th>Category</th><th>Spend</th><th>Best card</th><th>Mult</th><th>Value</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const itb = inner.querySelector("tbody");
+    r.assignment.forEach(a => {
+      const rr = document.createElement("tr");
+      rr.innerHTML = `
+        <td>${a.category}</td>
+        <td>$${fmtMoney(a.spend)}</td>
+        <td>${a.bestCard ?? "-"}</td>
+        <td>${a.mult}</td>
+        <td>$${fmtMoney(a.value)}</td>
+      `;
+      itb.appendChild(rr);
+    });
+    details.appendChild(inner);
+
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${r.cards.join(", ")}</td>
+      <td>$${fmtMoney(r.earn)}</td>
+      <td>$${fmtMoney(r.cost)}</td>
+      <td><b>$${fmtMoney(r.net)}</b></td>
+      <td></td>
+    `;
+    tr.children[5].appendChild(details);
+    tbody.appendChild(tr);
+  });
+
+  out.appendChild(table);
+}
+
+function normalizeData(data) {
+  if (!data || typeof data !== "object") throw new Error("JSON must be an object with { categories, cards }.");
+
+  const categories = Array.isArray(data.categories) ? data.categories : [];
+  const cards = Array.isArray(data.cards) ? data.cards : [];
+
+  if (!categories.length) throw new Error("No categories found.");
+  if (!cards.length) throw new Error("No cards found.");
+
+  // Ensure each card has multipliers for each category (default 0)
+  const catNames = categories.map(c => c.name);
+  for (const card of cards) {
+    if (!card.name) throw new Error("Every card must have a name.");
+    if (typeof card.pointValue !== "number") card.pointValue = Number(card.pointValue ?? 0);
+    if (typeof card.monthlyNetFee !== "number") card.monthlyNetFee = Number(card.monthlyNetFee ?? 0);
+    if (!card.multipliers || typeof card.multipliers !== "object") card.multipliers = {};
+    for (const cn of catNames) {
+      if (card.multipliers[cn] == null) card.multipliers[cn] = 0;
+      card.multipliers[cn] = Number(card.multipliers[cn] ?? 0);
+    }
+  }
+
+  // Ensure spends are numbers
+  for (const c of categories) {
+    c.monthlySpend = Number(c.monthlySpend ?? 0);
+    if (!c.name) throw new Error("Every category must have a name.");
+  }
+
+  return { categories, cards };
+}
+
+function run() {
+  el("out").innerHTML = "";
+  try {
+    const data = JSON.parse(el("jsonInput").value);
+    const { categories, cards } = normalizeData(data);
+
+    const maxCards = Number(el("maxCards").value);
+    const all = [];
+
+    for (let k = 1; k <= maxCards; k++) {
+      const combos = combinations(cards, k);
+      for (const combo of combos) {
+        if (violatesExclusiveGroup(combo)) continue;
+        const s = scoreCombo(combo, categories);
+        all.push({ k, cards: combo.map(c => c.name), ...s });
+      }
+    }
+
+    all.sort((a, b) => b.net - a.net);
+
+    const topN = Number(el("topN").value);
+    setMsg(
+      `Checked <b>${all.length}</b> valid combos (up to ${maxCards} cards). Showing top <b>${topN}</b>.`
+    );
+    renderResults(all, topN);
+  } catch (e) {
+    setMsg(e.message || String(e), true);
+  }
+}
+
+function addNewCard() {
+  try {
+    const data = JSON.parse(el("jsonInput").value);
+    const { categories, cards } = normalizeData(data);
+
+    const name = prompt("New card name:");
+    if (!name) return;
+
+    const newCard = {
+      name,
+      pointValue: 0.01,
+      monthlyNetFee: 0,
+      // optional: set this if the card is a variant of another card
+      // exclusiveGroup: "Some Group",
+      multipliers: {}
+    };
+    for (const c of categories) newCard.multipliers[c.name] = 0;
+
+    cards.push(newCard);
+    data.cards = cards;
+
+    el("jsonInput").value = JSON.stringify(data, null, 2);
+    setMsg(`Added card: <b>${name}</b>. Set its multipliers and fees in the JSON, then Run.`);
+  } catch (e) {
+    setMsg("Fix JSON first (then try Add new card). " + (e.message || String(e)), true);
+  }
+}
+
+function reset() {
+  el("jsonInput").value = JSON.stringify(DEFAULT_DATA, null, 2);
+  setMsg("Reset to your pasted card list. Edit JSON and click Run.");
+}
+
+el("runBtn").addEventListener("click", run);
+el("addCardBtn").addEventListener("click", addNewCard);
+el("resetBtn").addEventListener("click", reset);
+
+reset();
+</script>
+
+</body>
+</html>
