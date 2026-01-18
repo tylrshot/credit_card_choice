@@ -374,6 +374,73 @@
       padding: 40px;
       opacity: 0.6;
     }
+
+    .quick-edit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .quick-edit-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .quick-edit-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quick-edit-label {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .quick-edit-input {
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(127,127,127,0.35);
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+    }
+
+    .quick-edit-input:focus {
+      outline: none;
+      border-color: rgba(80,140,255,0.8);
+      background: rgba(80,140,255,0.05);
+    }
+
+    .point-values-section {
+      margin-bottom: 20px;
+      padding: 14px;
+      background: rgba(127,127,127,0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(127,127,127,0.2);
+    }
+
+    .point-values-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .categories-section {
+      margin-top: 16px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -388,6 +455,12 @@
     const { useState, useEffect, useRef } = React;
 
     const DEFAULT_DATA = {
+      pointValues: {
+        "Cash": 0.01,
+        "Chase": 0.01,
+        "Amex": 0.01,
+        "BILT": 0.01
+      },
       categories: [
         { name: "Whole Foods", monthlySpend: 500 },
         { name: "Costco", monthlySpend: 500 },
@@ -405,8 +478,9 @@
       cards: [
         {
           name: "BofA CCC (Online Shopping)",
-          pointValue: 0.01,
+          pointType: "Cash",
           monthlyNetFee: 0,
+          spendingCap: 833,
           multipliers: {
             "Whole Foods": 3.5, "Costco": 3.5, "Other Grocery": 3.5,
             "Amazon": 5.25, "Online Shopping": 5.25,
@@ -418,8 +492,9 @@
         },
         {
           name: "BofA Premium Rewards",
-          pointValue: 0.01,
+          pointType: "Cash",
           monthlyNetFee: 3.75,
+          spendingCap: 833,
           multipliers: {
             "Whole Foods": 2.625, "Costco": 2.625, "Other Grocery": 2.625,
             "Amazon": 2.625, "Online Shopping": 2.625,
@@ -432,7 +507,7 @@
         {
           name: "Bilt Blue",
           exclusiveGroup: "Bilt",
-          pointValue: 0.01,
+          pointType: "BILT",
           monthlyNetFee: 0,
           multipliers: {
             "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
@@ -446,7 +521,7 @@
         {
           name: "Bilt Obsidian (Dining focus)",
           exclusiveGroup: "Bilt",
-          pointValue: 0.01,
+          pointType: "BILT",
           monthlyNetFee: 5.833333333333333,
           multipliers: {
             "Whole Foods": 1, "Costco": 0, "Other Grocery": 1,
@@ -460,7 +535,7 @@
         {
           name: "Bilt Obsidian (Grocery focus)",
           exclusiveGroup: "Bilt",
-          pointValue: 0.01,
+          pointType: "BILT",
           monthlyNetFee: 5.833333333333333,
           multipliers: {
             "Whole Foods": 3, "Costco": 0, "Other Grocery": 3,
@@ -474,7 +549,7 @@
         {
           name: "Bilt Palladium",
           exclusiveGroup: "Bilt",
-          pointValue: 0.01,
+          pointType: "BILT",
           monthlyNetFee: 32.916666666666664,
           multipliers: {
             "Whole Foods": 2, "Costco": 0, "Other Grocery": 2,
@@ -487,7 +562,7 @@
         },
         {
           name: "Amazon",
-          pointValue: 0.01,
+          pointType: "Cash",
           monthlyNetFee: 0,
           multipliers: {
             "Whole Foods": 5, "Costco": 1, "Other Grocery": 1,
@@ -500,7 +575,7 @@
         },
         {
           name: "Amex Plat",
-          pointValue: 0.01,
+          pointType: "Amex",
           monthlyNetFee: 0,
           multipliers: {
             "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
@@ -513,7 +588,7 @@
         },
         {
           name: "Amex Gold",
-          pointValue: 0.01,
+          pointType: "Amex",
           monthlyNetFee: 14.583333333333334,
           multipliers: {
             "Whole Foods": 4, "Costco": 0, "Other Grocery": 4,
@@ -526,7 +601,7 @@
         },
         {
           name: "CSP",
-          pointValue: 0.01,
+          pointType: "Chase",
           monthlyNetFee: 0,
           multipliers: {
             "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
@@ -571,14 +646,14 @@
       return false;
     }
 
-    function scoreCombo(combo, categories) {
+    function scoreCombo(combo, categories, pointValues) {
       let earn = 0;
       const assignment = [];
 
       for (const cat of categories) {
         let best = { cardName: null, mult: 0, value: -Infinity };
         for (const card of combo) {
-          const pv = Number(card.pointValue ?? 0);
+          const pv = Number(pointValues[card.pointType] ?? 0);
           const mult = Number(card.multipliers?.[cat.name] ?? 0);
           const v = Number(cat.monthlySpend ?? 0) * mult * pv;
           if (v > best.value) best = { cardName: card.name, mult, value: v };
@@ -594,32 +669,79 @@
         });
       }
 
+      // Calculate spend per card for cap logic
+      const spendPerCard = {};
+      const nonRentSpendPerCard = {};
+      for (const a of assignment) {
+        if (a.bestCard) {
+          spendPerCard[a.bestCard] = (spendPerCard[a.bestCard] || 0) + a.spend;
+          if (a.category !== "Rent") {
+            nonRentSpendPerCard[a.bestCard] = (nonRentSpendPerCard[a.bestCard] || 0) + a.spend;
+          }
+        }
+      }
+
       // Adjust rent earnings for Bilt cards
       const rentCategory = assignment.find(a => a.category === "Rent");
       if (rentCategory) {
         const rentCategoryData = categories.find(c => c.name === "Rent");
         const totalRentSpend = Number(rentCategoryData?.monthlySpend ?? 0);
 
-        const spendPerCard = {};
-        for (const a of assignment) {
-          if (a.category !== "Rent" && a.bestCard) {
-            spendPerCard[a.bestCard] = (spendPerCard[a.bestCard] || 0) + a.spend;
-          }
-        }
-
         const rentCard = combo.find(c => c.name === rentCategory.bestCard);
         const isBiltCard = rentCard && rentCard.name.startsWith("Bilt");
 
         if (isBiltCard) {
-          const nonRentSpending = spendPerCard[rentCard.name] || 0;
+          const nonRentSpending = nonRentSpendPerCard[rentCard.name] || 0;
           const cappedRentSpend = Math.min(totalRentSpend, nonRentSpending);
           const rentMult = Number(rentCard.multipliers?.["Rent"] ?? 0);
-          const rentPV = Number(rentCard.pointValue ?? 0);
+          const rentPV = Number(pointValues[rentCard.pointType] ?? 0);
           const newRentValue = cappedRentSpend * rentMult * rentPV;
 
           earn = earn - rentCategory.value + newRentValue;
           rentCategory.value = newRentValue;
           rentCategory.spend = cappedRentSpend;
+        }
+      }
+
+      // Apply spending caps for BofA cards
+
+      for (const card of combo) {
+        if (card.spendingCap) {
+          const totalSpend = spendPerCard[card.name] || 0;
+
+          if (totalSpend > card.spendingCap) {
+            // Calculate with variance: use two months (avg-100) and (avg+100)
+            const month1Cap = Math.max(0, card.spendingCap - 100);
+            const month2Cap = Math.min(totalSpend, card.spendingCap + 100);
+            const avgCap = (month1Cap + month2Cap) / 2;
+
+            // Find categories that exceed base rate (1.75% for BofA)
+            let capSpend = 0;
+            for (const a of assignment) {
+              if (a.bestCard === card.name && a.mult > 1.75) {
+                capSpend += a.spend;
+              }
+            }
+
+            if (capSpend > avgCap) {
+              // Redistribute excess spending
+              let excessSpend = capSpend - avgCap;
+              const pv = Number(pointValues[card.pointType] ?? 0);
+
+              for (const a of assignment) {
+                if (a.bestCard === card.name && a.mult > 1.75 && excessSpend > 0) {
+                  const reduction = Math.min(a.spend, excessSpend);
+                  const oldValue = a.spend * a.mult * pv;
+                  const newValue = (a.spend - reduction) * a.mult * pv + reduction * 1.75 * pv;
+                  const valueLoss = oldValue - newValue;
+
+                  earn -= valueLoss;
+                  a.value -= valueLoss;
+                  excessSpend -= reduction;
+                }
+              }
+            }
+          }
         }
       }
 
@@ -629,20 +751,29 @@
 
     function normalizeData(data) {
       if (!data || typeof data !== "object") {
-        throw new Error("JSON must be an object with { categories, cards }.");
+        throw new Error("JSON must be an object with { pointValues, categories, cards }.");
       }
 
+      const pointValues = data.pointValues || {};
       const categories = Array.isArray(data.categories) ? data.categories : [];
       const cards = Array.isArray(data.cards) ? data.cards : [];
 
       if (!categories.length) throw new Error("No categories found.");
       if (!cards.length) throw new Error("No cards found.");
 
+      // Normalize point values
+      for (const key in pointValues) {
+        pointValues[key] = Number(pointValues[key] ?? 0);
+      }
+
       const catNames = categories.map(c => c.name);
       for (const card of cards) {
         if (!card.name) throw new Error("Every card must have a name.");
-        if (typeof card.pointValue !== "number") card.pointValue = Number(card.pointValue ?? 0);
+        if (!card.pointType) card.pointType = "Cash"; // Default to Cash if not specified
         if (typeof card.monthlyNetFee !== "number") card.monthlyNetFee = Number(card.monthlyNetFee ?? 0);
+        if (card.spendingCap !== undefined && typeof card.spendingCap !== "number") {
+          card.spendingCap = Number(card.spendingCap);
+        }
         if (!card.multipliers || typeof card.multipliers !== "object") card.multipliers = {};
         for (const cn of catNames) {
           if (card.multipliers[cn] == null) card.multipliers[cn] = 0;
@@ -655,7 +786,7 @@
         if (!c.name) throw new Error("Every category must have a name.");
       }
 
-      return { categories, cards };
+      return { pointValues, categories, cards };
     }
 
     function CollapsibleSection({ title, defaultOpen = false, children }) {
@@ -910,6 +1041,37 @@
       const [bestByCardCount, setBestByCardCount] = useState(null);
       const [message, setMessage] = useState(null);
       const [error, setError] = useState(null);
+      const [quickEditData, setQuickEditData] = useState(null);
+
+      // Initialize quick edit data from JSON
+      useEffect(() => {
+        try {
+          const data = JSON.parse(jsonInput);
+          setQuickEditData(data);
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }, []);
+
+      const updateQuickEdit = (field, value) => {
+        try {
+          const data = JSON.parse(jsonInput);
+          if (field.startsWith('pointValues.')) {
+            const currency = field.split('.')[1];
+            data.pointValues[currency] = Number(value) || 0;
+          } else if (field.startsWith('category.')) {
+            const categoryName = field.split('.')[1];
+            const category = data.categories.find(c => c.name === categoryName);
+            if (category) {
+              category.monthlySpend = Number(value) || 0;
+            }
+          }
+          setJsonInput(JSON.stringify(data, null, 2));
+          setQuickEditData(data);
+        } catch (e) {
+          // Ignore parse errors
+        }
+      };
 
       const runAnalysis = () => {
         setError(null);
@@ -917,7 +1079,7 @@
 
         try {
           const data = JSON.parse(jsonInput);
-          const { categories, cards } = normalizeData(data);
+          const { pointValues, categories, cards } = normalizeData(data);
 
           const all = [];
 
@@ -925,7 +1087,7 @@
             const combos = combinations(cards, k);
             for (const combo of combos) {
               if (violatesExclusiveGroup(combo)) continue;
-              const s = scoreCombo(combo, categories);
+              const s = scoreCombo(combo, categories, pointValues);
               all.push({ k, cards: combo.map(c => c.name), ...s });
             }
           }
@@ -955,14 +1117,14 @@
       const addNewCard = () => {
         try {
           const data = JSON.parse(jsonInput);
-          const { categories, cards } = normalizeData(data);
+          const { pointValues, categories, cards } = normalizeData(data);
 
           const name = prompt('New card name:');
           if (!name) return;
 
           const newCard = {
             name,
-            pointValue: 0.01,
+            pointType: "Cash",
             monthlyNetFee: 0,
             multipliers: {}
           };
@@ -990,11 +1152,12 @@
         <div className="wrap">
           <h1>💳 Best 1-5 Card Strategies</h1>
           <p>
-            Edit the JSON, then click <strong>Run</strong>. For each combo, the optimizer routes each category to the best card.
+            Use Quick Edit or edit the JSON below, then click <strong>Run</strong>. For each combo, the optimizer routes each category to the best card.
             <br />
             <span className="pill">Mobile-friendly</span>
             <span className="pill">Mutually exclusive cards</span>
             <span className="pill">Bilt rent cap</span>
+            <span className="pill">BofA spending caps</span>
           </p>
 
           <div className="controls-row" style={{ marginBottom: '16px' }}>
@@ -1021,6 +1184,47 @@
             <button className="primary" onClick={runAnalysis}>▶ Run</button>
           </div>
 
+          {quickEditData && (
+            <CollapsibleSection title="✏️ Quick Edit (Mobile-Friendly)" defaultOpen={true}>
+              <div className="point-values-section">
+                <div className="section-title">Point Values ($ per point)</div>
+                <div className="point-values-grid">
+                  {Object.keys(quickEditData.pointValues || {}).map(currency => (
+                    <div key={currency} className="quick-edit-item">
+                      <label className="quick-edit-label">{currency} Points</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        className="quick-edit-input"
+                        value={quickEditData.pointValues[currency] || 0}
+                        onChange={(e) => updateQuickEdit(`pointValues.${currency}`, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="categories-section">
+                <div className="section-title">Monthly Spending by Category</div>
+                <div className="quick-edit-grid">
+                  {(quickEditData.categories || []).map(category => (
+                    <div key={category.name} className="quick-edit-item">
+                      <label className="quick-edit-label">{category.name}</label>
+                      <input
+                        type="number"
+                        step="10"
+                        className="quick-edit-input"
+                        value={category.monthlySpend || 0}
+                        onChange={(e) => updateQuickEdit(`category.${category.name}`, e.target.value)}
+                        placeholder="$0"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CollapsibleSection>
+          )}
+
           <CollapsibleSection title="⚙️ Configuration & Data" defaultOpen={false}>
             <div className="controls-row">
               <button onClick={addNewCard}>+ Add card</button>
@@ -1031,7 +1235,9 @@
               <strong>Quick tips:</strong>
               <ul style={{ margin: '8px 0 0 18px', paddingLeft: '0' }}>
                 <li><strong>monthlyNetFee</strong> = (annualFee - valueOfCredits) / 12</li>
-                <li><strong>pointValue</strong> = $ value per point (e.g., 0.01 = 1¢)</li>
+                <li><strong>pointType</strong> = currency type (Cash, Chase, Amex, BILT)</li>
+                <li><strong>pointValues</strong> = $ value per point by currency (e.g., 0.01 = 1¢)</li>
+                <li><strong>spendingCap</strong> = monthly spending cap for bonus categories</li>
                 <li><strong>exclusiveGroup</strong> = prevents multiple variants (e.g., all Bilt cards)</li>
               </ul>
             </div>
