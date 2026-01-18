@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -7,674 +6,1081 @@
   <title>Credit Card Strategy Optimizer (1–5 Cards)</title>
   <style>
     :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
-    h1 { font-size: 20px; margin: 0 0 10px; }
-    p { margin: 6px 0 14px; opacity: 0.9; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .controls { padding: 12px; border: 1px solid rgba(127,127,127,0.35); border-radius: 12px; }
-    textarea {
-      width: 100%;
-      height: 320px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size: 12px;
-      line-height: 1.35;
-      padding: 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(127,127,127,0.35);
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg, #fff);
     }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+    @media (min-width: 768px) {
+      .wrap { padding: 18px; }
+      h1 { font-size: 24px; margin-bottom: 10px; }
+    }
+
+    p { margin: 6px 0 14px; opacity: 0.9; font-size: 14px; }
+
+    .section {
+      margin-bottom: 16px;
+      border: 1px solid rgba(127,127,127,0.35);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 12px 16px;
+      background: rgba(127,127,127,0.05);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .section-header:active {
+      background: rgba(127,127,127,0.1);
+    }
+
+    .section-content {
+      padding: 16px;
+    }
+
+    .section-content.collapsed {
+      display: none;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
     button, select, input {
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid rgba(127,127,127,0.35);
       background: transparent;
       color: inherit;
+      font-size: 14px;
+      font-family: inherit;
     }
-    button { cursor: pointer; }
-    button.primary { border-color: rgba(80,140,255,0.8); }
-    .hint { font-size: 12px; opacity: 0.85; }
-    .error { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,80,80,0.7); margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(127,127,127,0.25); vertical-align: top; }
-    th { font-size: 12px; opacity: 0.9; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
-    details { margin-top: 6px; }
-    summary { cursor: pointer; }
-    .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(127,127,127,0.35); font-size: 12px; opacity: 0.9; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 980px) {
-      .grid { grid-template-columns: 1fr 1fr; }
+
+    button {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: rgba(127,127,127,0.1);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.primary {
+      background: rgba(80,140,255,0.15);
+      border-color: rgba(80,140,255,0.8);
+      font-weight: 500;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(127,127,127,0.35);
+      resize: vertical;
+    }
+
+    @media (min-width: 768px) {
+      textarea {
+        min-height: 320px;
+        font-size: 12px;
+      }
+    }
+
+    .hint { font-size: 12px; opacity: 0.85; line-height: 1.5; }
+    .error {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,80,80,0.1);
+      border: 1px solid rgba(255,80,80,0.7);
+      margin: 12px 0;
+    }
+    .success {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(75,192,75,0.1);
+      border: 1px solid rgba(75,192,75,0.7);
+      margin: 12px 0;
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(127,127,127,0.1);
+      border: 1px solid rgba(127,127,127,0.35);
+      font-size: 11px;
+      opacity: 0.9;
+      margin: 2px;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+      padding: 16px;
+      background: rgba(127,127,127,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(127,127,127,0.2);
+    }
+
+    .chart-container h2 {
+      font-size: 16px;
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+
+    @media (min-width: 768px) {
+      .chart-container h2 {
+        font-size: 18px;
+      }
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .chart-wrapper {
+        height: 400px;
+      }
+    }
+
+    /* Mobile-friendly result cards */
+    .result-card {
+      border: 1px solid rgba(127,127,127,0.25);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: rgba(127,127,127,0.02);
+    }
+
+    .result-card.top-result {
+      border-color: rgba(80,140,255,0.6);
+      background: rgba(80,140,255,0.05);
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      gap: 12px;
+    }
+
+    .result-rank {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(80,140,255,1);
+      min-width: 30px;
+    }
+
+    .result-cards-list {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .result-net {
+      font-size: 20px;
+      font-weight: 700;
+      color: rgba(75,192,75,1);
+      white-space: nowrap;
+    }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .result-stat {
+      padding: 8px;
+      background: rgba(127,127,127,0.05);
+      border-radius: 8px;
+    }
+
+    .result-stat-label {
+      opacity: 0.7;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .result-stat-value {
+      font-weight: 600;
+    }
+
+    .breakdown-toggle {
+      width: 100%;
+      text-align: left;
+      padding: 8px;
+      margin-top: 8px;
+      background: rgba(127,127,127,0.05);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .breakdown-toggle:hover {
+      background: rgba(127,127,127,0.1);
+    }
+
+    .breakdown-content {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(127,127,127,0.2);
+    }
+
+    .breakdown-item {
+      display: grid;
+      grid-template-columns: 2fr 1fr 2fr 0.5fr 1fr;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(127,127,127,0.1);
+      align-items: center;
+    }
+
+    .breakdown-item:last-child {
+      border-bottom: none;
+    }
+
+    @media (max-width: 480px) {
+      .breakdown-item {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        padding: 10px 0;
+      }
+
+      .breakdown-item > div {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .breakdown-item > div::before {
+        content: attr(data-label);
+        opacity: 0.6;
+        font-size: 11px;
+      }
+    }
+
+    .breakdown-header {
+      font-weight: 600;
+      opacity: 0.8;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 480px) {
+      .breakdown-header {
+        display: none;
+      }
+    }
+
+    /* Desktop table view */
+    .desktop-table {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-cards {
+        display: none;
+      }
+
+      .desktop-table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+      }
+
+      th, td {
+        text-align: left;
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(127,127,127,0.25);
+        vertical-align: top;
+      }
+
+      th {
+        font-size: 12px;
+        opacity: 0.9;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      tr:hover {
+        background: rgba(127,127,127,0.03);
+      }
+
+      details {
+        margin-top: 6px;
+      }
+
+      summary {
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+      }
+
+      summary:hover {
+        background: rgba(127,127,127,0.1);
+      }
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Best 1 / 2 / 3 / 4 / 5 Card Strategies</h1>
-    <p>
-      Edit the JSON, then click <b>Run</b>. For each combo, the optimizer routes each category to the best card in the combo.
-      <span class="pill">Supports “mutually exclusive” card variants</span>
-    </p>
+  <div id="root"></div>
 
-```
-<div class="grid">
-  <div class="controls">
-    <div class="row" style="margin-bottom:10px;">
-      <label class="row" style="gap:8px;">
-        Max cards:
-        <select id="maxCards">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5" selected>5</option>
-        </select>
-      </label>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-      <label class="row" style="gap:8px;">
-        Show top:
-        <select id="topN">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="25">25</option>
-        </select>
-      </label>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-      <button class="primary" id="runBtn">Run</button>
-      <button id="addCardBtn" title="Appends a template card to the JSON">Add new card</button>
-      <button id="resetBtn" title="Restore your current card list">Reset to your data</button>
-    </div>
-
-    <div class="hint">
-      <b>Easy add-card workflow:</b> click “Add new card”, fill in name, then edit multipliers/fees.
-      <br/>
-      <b>Mutual exclusivity:</b> give variants the same <span class="mono">exclusiveGroup</span> (example: “Bilt Obsidian” has two variants below).
-    </div>
-  </div>
-
-  <div class="controls">
-    <div class="hint" style="margin-bottom:10px;">
-      Notes:
-      <ul style="margin:8px 0 0 18px;">
-        <li><b>monthlyNetFee</b> is already <span class="mono">(annualFee - valueOfFee)/12</span>.</li>
-        <li><b>pointValue</b> is the $ value per point (you set 0.01 everywhere).</li>
-        <li>If a card has no multiplier for a category, set it to 0.</li>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<textarea id="jsonInput" spellcheck="false"></textarea>
-<div id="msg"></div>
-<div id="chartContainer" style="margin-top: 20px; display: none;">
-  <h2 style="font-size: 18px; margin-bottom: 12px;">Rewards vs Complexity</h2>
-  <canvas id="rewardsChart" style="max-height: 400px;"></canvas>
-</div>
-<div id="out"></div>
-```
-
-  </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-/**
- * Your card list rewritten from the sheet you pasted.
- * I kept Bilt as separate physical cards, BUT your Obsidian "Dining" vs "Grocery" columns
- * look like mutually exclusive configurations, so I modeled them as variants using exclusiveGroup.
- */
-const DEFAULT_DATA = {
-  categories: [
-    { name: "Whole Foods", monthlySpend: 500 },
-    { name: "Costco", monthlySpend: 500 },
-    { name: "Other Grocery", monthlySpend: 250 },
-    { name: "Amazon", monthlySpend: 250 },
-    { name: "Online Shopping", monthlySpend: 250 },
-    { name: "Dining", monthlySpend: 500 },
-    { name: "Airlines", monthlySpend: 100 },
-    { name: "Hotel", monthlySpend: 100 },
-    { name: "Rideshare", monthlySpend: 30 },
-    { name: "Travel Other", monthlySpend: 50 },
-    { name: "Misc", monthlySpend: 200 },
-    { name: "Rent", monthlySpend: 5200 }
-  ],
-  cards: [
-    {
-      name: "BofA CCC (Online Shopping)",
-      pointValue: 0.01,
-      monthlyNetFee: 0,
-      multipliers: {
-        "Whole Foods": 3.5, "Costco": 3.5, "Other Grocery": 3.5,
-        "Amazon": 5.25, "Online Shopping": 5.25,
-        "Dining": 1.75,
-        "Airlines": 1.75, "Hotel": 1.75, "Rideshare": 1.75, "Travel Other": 1.75,
-        "Misc": 1.75,
-        "Rent": 0
-      }
-    },
-    {
-      name: "BofA Premium Rewards",
-      pointValue: 0.01,
-      monthlyNetFee: 3.75, // (95 - 50)/12
-      multipliers: {
-        "Whole Foods": 2.625, "Costco": 2.625, "Other Grocery": 2.625,
-        "Amazon": 2.625, "Online Shopping": 2.625,
-        "Dining": 3.5,
-        "Airlines": 3.5, "Hotel": 3.5, "Rideshare": 3.5, "Travel Other": 3.5,
-        "Misc": 2.625,
-        "Rent": 0
-      }
-    },
-    {
-      name: "Bilt Blue",
-      exclusiveGroup: "Bilt",
-      pointValue: 0.01,
-      monthlyNetFee: 0,
-      multipliers: {
-        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 1,
-        "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
-        "Misc": 1,
-        "Rent": 1.33
-      }
-    },
-
-    // All Bilt cards are mutually exclusive. Only one can be chosen in a strategy.
-    {
-      name: "Bilt Obsidian (Dining focus)",
-      exclusiveGroup: "Bilt",
-      pointValue: 0.01,
-      monthlyNetFee: 5.833333333333333, // (95 - 25)/12
-      multipliers: {
-        "Whole Foods": 1, "Costco": 0, "Other Grocery": 1,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 3,
-        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
-        "Misc": 1,
-        "Rent": 1.33
-      }
-    },
-    {
-      name: "Bilt Obsidian (Grocery focus)",
-      exclusiveGroup: "Bilt",
-      pointValue: 0.01,
-      monthlyNetFee: 5.833333333333333, // (95 - 25)/12
-      multipliers: {
-        "Whole Foods": 3, "Costco": 0, "Other Grocery": 3,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 1,
-        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
-        "Misc": 1,
-        "Rent": 1.33
-      }
-    },
-
-    {
-      name: "Bilt Palladium",
-      exclusiveGroup: "Bilt",
-      pointValue: 0.01,
-      monthlyNetFee: 32.916666666666664, // (495 - 100)/12
-      multipliers: {
-        "Whole Foods": 2, "Costco": 0, "Other Grocery": 2,
-        "Amazon": 2, "Online Shopping": 2,
-        "Dining": 2,
-        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
-        "Misc": 1,
-        "Rent": 1.33
-      }
-    },
-    {
-      name: "Amazon",
-      pointValue: 0.01,
-      monthlyNetFee: 0,
-      multipliers: {
-        "Whole Foods": 5, "Costco": 1, "Other Grocery": 1,
-        "Amazon": 5, "Online Shopping": 1,
-        "Dining": 2,
-        "Airlines": 1, "Hotel": 1, "Rideshare": 2, "Travel Other": 1,
-        "Misc": 1,
-        "Rent": 0
-      }
-    },
-    {
-      name: "Amex Plat",
-      pointValue: 0.01,
-      monthlyNetFee: 0, // (795 - 795)/12
-      multipliers: {
-        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 1,
-        "Airlines": 5, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
-        "Misc": 1,
-        "Rent": 0
-      }
-    },
-    {
-      name: "Amex Gold",
-      pointValue: 0.01,
-      monthlyNetFee: 14.583333333333334, // (325 - 150)/12
-      multipliers: {
-        "Whole Foods": 4, "Costco": 0, "Other Grocery": 4,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 4,
-        "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
-        "Misc": 1,
-        "Rent": 0
-      }
-    },
-    {
-      name: "CSP",
-      pointValue: 0.01,
-      monthlyNetFee: 0, // (95 - 95)/12
-      multipliers: {
-        "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
-        "Amazon": 1, "Online Shopping": 1,
-        "Dining": 3,
-        "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
-        "Misc": 1,
-        "Rent": 0
-      }
-    }
-  ]
-};
-
-const el = (id) => document.getElementById(id);
-const fmtMoney = (n) =>
-  (Math.round(n * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function setMsg(html, isError=false) {
-  el("msg").innerHTML = isError ? `<div class="error">${html}</div>` : `<div class="hint" style="margin-top:12px;">${html}</div>`;
-}
-
-function combinations(items, k) {
-  const res = [];
-  const path = [];
-  function rec(start) {
-    if (path.length === k) { res.push(path.slice()); return; }
-    for (let i = start; i < items.length; i++) {
-      path.push(items[i]);
-      rec(i + 1);
-      path.pop();
-    }
-  }
-  rec(0);
-  return res;
-}
-
-function violatesExclusiveGroup(combo) {
-  const seen = new Set();
-  for (const c of combo) {
-    if (!c.exclusiveGroup) continue;
-    if (seen.has(c.exclusiveGroup)) return true;
-    seen.add(c.exclusiveGroup);
-  }
-  return false;
-}
-
-function scoreCombo(combo, categories) {
-  let earn = 0;
-  const assignment = [];
-
-  // First pass: assign non-rent categories to best cards
-  for (const cat of categories) {
-    let best = { cardName: null, mult: 0, value: -Infinity };
-    for (const card of combo) {
-      const pv = Number(card.pointValue ?? 0);
-      const mult = Number(card.multipliers?.[cat.name] ?? 0);
-      const v = Number(cat.monthlySpend ?? 0) * mult * pv;
-      if (v > best.value) best = { cardName: card.name, mult, value: v };
-    }
-    const v = Math.max(0, best.value);
-    earn += v;
-    assignment.push({
-      category: cat.name,
-      spend: Number(cat.monthlySpend ?? 0),
-      bestCard: best.cardName,
-      mult: best.mult,
-      value: v
-    });
-  }
-
-  // Second pass: adjust rent earnings for Bilt cards based on non-rent spending
-  const rentCategory = assignment.find(a => a.category === "Rent");
-  if (rentCategory) {
-    const rentCategoryData = categories.find(c => c.name === "Rent");
-    const totalRentSpend = Number(rentCategoryData?.monthlySpend ?? 0);
-
-    // Calculate non-rent spending per card
-    const spendPerCard = {};
-    for (const a of assignment) {
-      if (a.category !== "Rent" && a.bestCard) {
-        spendPerCard[a.bestCard] = (spendPerCard[a.bestCard] || 0) + a.spend;
-      }
-    }
-
-    // Find if rent is assigned to a Bilt card
-    const rentCard = combo.find(c => c.name === rentCategory.bestCard);
-    const isBiltCard = rentCard && rentCard.name.startsWith("Bilt");
-
-    if (isBiltCard) {
-      const nonRentSpending = spendPerCard[rentCard.name] || 0;
-      const cappedRentSpend = Math.min(totalRentSpend, nonRentSpending);
-      const rentMult = Number(rentCard.multipliers?.["Rent"] ?? 0);
-      const rentPV = Number(rentCard.pointValue ?? 0);
-      const newRentValue = cappedRentSpend * rentMult * rentPV;
-
-      // Adjust earnings
-      earn = earn - rentCategory.value + newRentValue;
-      rentCategory.value = newRentValue;
-      rentCategory.spend = cappedRentSpend;
-    }
-  }
-
-  const cost = combo.reduce((s, c) => s + Number(c.monthlyNetFee ?? 0), 0);
-  return { earn, cost, net: earn - cost, assignment };
-}
-
-function renderResults(results, topN) {
-  const out = el("out");
-  out.innerHTML = "";
-
-  const table = document.createElement("table");
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Cards</th>
-        <th>Earn / mo</th>
-        <th>Fees / mo</th>
-        <th>Net / mo</th>
-        <th>Breakdown</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  `;
-  const tbody = table.querySelector("tbody");
-
-  results.slice(0, topN).forEach((r, i) => {
-    const tr = document.createElement("tr");
-
-    const details = document.createElement("details");
-    const summary = document.createElement("summary");
-    summary.textContent = "Show category routing";
-    details.appendChild(summary);
-
-    const inner = document.createElement("table");
-    inner.innerHTML = `
-      <thead>
-        <tr>
-          <th>Category</th><th>Spend</th><th>Best card</th><th>Mult</th><th>Value</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const itb = inner.querySelector("tbody");
-    r.assignment.forEach(a => {
-      const rr = document.createElement("tr");
-      rr.innerHTML = `
-        <td>${a.category}</td>
-        <td>$${fmtMoney(a.spend)}</td>
-        <td>${a.bestCard ?? "-"}</td>
-        <td>${a.mult}</td>
-        <td>$${fmtMoney(a.value)}</td>
-      `;
-      itb.appendChild(rr);
-    });
-    details.appendChild(inner);
-
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${r.cards.join(", ")}</td>
-      <td>$${fmtMoney(r.earn)}</td>
-      <td>$${fmtMoney(r.cost)}</td>
-      <td><b>$${fmtMoney(r.net)}</b></td>
-      <td></td>
-    `;
-    tr.children[5].appendChild(details);
-    tbody.appendChild(tr);
-  });
-
-  out.appendChild(table);
-}
-
-let rewardsChart = null;
-
-function renderComplexityChart(bestByCardCount) {
-  const chartContainer = el("chartContainer");
-  chartContainer.style.display = "block";
-
-  const labels = [];
-  const netValues = [];
-  const earnValues = [];
-  const marginalGains = [];
-
-  for (let k = 1; k <= 5; k++) {
-    const strategy = bestByCardCount[k];
-    if (strategy) {
-      labels.push(`${k} card${k > 1 ? 's' : ''}`);
-      netValues.push(strategy.net);
-      earnValues.push(strategy.earn);
-
-      // Calculate marginal gain from previous tier
-      if (k > 1 && bestByCardCount[k - 1]) {
-        const marginal = strategy.net - bestByCardCount[k - 1].net;
-        marginalGains.push(marginal);
-      } else {
-        marginalGains.push(strategy.net);
-      }
-    }
-  }
-
-  // Destroy previous chart if it exists
-  if (rewardsChart) {
-    rewardsChart.destroy();
-  }
-
-  const ctx = el("rewardsChart").getContext("2d");
-  rewardsChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [
+    const DEFAULT_DATA = {
+      categories: [
+        { name: "Whole Foods", monthlySpend: 500 },
+        { name: "Costco", monthlySpend: 500 },
+        { name: "Other Grocery", monthlySpend: 250 },
+        { name: "Amazon", monthlySpend: 250 },
+        { name: "Online Shopping", monthlySpend: 250 },
+        { name: "Dining", monthlySpend: 500 },
+        { name: "Airlines", monthlySpend: 100 },
+        { name: "Hotel", monthlySpend: 100 },
+        { name: "Rideshare", monthlySpend: 30 },
+        { name: "Travel Other", monthlySpend: 50 },
+        { name: "Misc", monthlySpend: 200 },
+        { name: "Rent", monthlySpend: 5200 }
+      ],
+      cards: [
         {
-          label: "Net Monthly Value",
-          data: netValues,
-          backgroundColor: "rgba(80, 140, 255, 0.8)",
-          borderColor: "rgba(80, 140, 255, 1)",
-          borderWidth: 1,
-          yAxisID: "y"
+          name: "BofA CCC (Online Shopping)",
+          pointValue: 0.01,
+          monthlyNetFee: 0,
+          multipliers: {
+            "Whole Foods": 3.5, "Costco": 3.5, "Other Grocery": 3.5,
+            "Amazon": 5.25, "Online Shopping": 5.25,
+            "Dining": 1.75,
+            "Airlines": 1.75, "Hotel": 1.75, "Rideshare": 1.75, "Travel Other": 1.75,
+            "Misc": 1.75,
+            "Rent": 0
+          }
         },
         {
-          label: "Marginal Gain",
-          data: marginalGains,
-          backgroundColor: "rgba(75, 192, 75, 0.8)",
-          borderColor: "rgba(75, 192, 75, 1)",
-          borderWidth: 1,
-          type: "line",
-          yAxisID: "y1"
+          name: "BofA Premium Rewards",
+          pointValue: 0.01,
+          monthlyNetFee: 3.75,
+          multipliers: {
+            "Whole Foods": 2.625, "Costco": 2.625, "Other Grocery": 2.625,
+            "Amazon": 2.625, "Online Shopping": 2.625,
+            "Dining": 3.5,
+            "Airlines": 3.5, "Hotel": 3.5, "Rideshare": 3.5, "Travel Other": 3.5,
+            "Misc": 2.625,
+            "Rent": 0
+          }
+        },
+        {
+          name: "Bilt Blue",
+          exclusiveGroup: "Bilt",
+          pointValue: 0.01,
+          monthlyNetFee: 0,
+          multipliers: {
+            "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 1,
+            "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+            "Misc": 1,
+            "Rent": 1.33
+          }
+        },
+        {
+          name: "Bilt Obsidian (Dining focus)",
+          exclusiveGroup: "Bilt",
+          pointValue: 0.01,
+          monthlyNetFee: 5.833333333333333,
+          multipliers: {
+            "Whole Foods": 1, "Costco": 0, "Other Grocery": 1,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 3,
+            "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+            "Misc": 1,
+            "Rent": 1.33
+          }
+        },
+        {
+          name: "Bilt Obsidian (Grocery focus)",
+          exclusiveGroup: "Bilt",
+          pointValue: 0.01,
+          monthlyNetFee: 5.833333333333333,
+          multipliers: {
+            "Whole Foods": 3, "Costco": 0, "Other Grocery": 3,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 1,
+            "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+            "Misc": 1,
+            "Rent": 1.33
+          }
+        },
+        {
+          name: "Bilt Palladium",
+          exclusiveGroup: "Bilt",
+          pointValue: 0.01,
+          monthlyNetFee: 32.916666666666664,
+          multipliers: {
+            "Whole Foods": 2, "Costco": 0, "Other Grocery": 2,
+            "Amazon": 2, "Online Shopping": 2,
+            "Dining": 2,
+            "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+            "Misc": 1,
+            "Rent": 1.33
+          }
+        },
+        {
+          name: "Amazon",
+          pointValue: 0.01,
+          monthlyNetFee: 0,
+          multipliers: {
+            "Whole Foods": 5, "Costco": 1, "Other Grocery": 1,
+            "Amazon": 5, "Online Shopping": 1,
+            "Dining": 2,
+            "Airlines": 1, "Hotel": 1, "Rideshare": 2, "Travel Other": 1,
+            "Misc": 1,
+            "Rent": 0
+          }
+        },
+        {
+          name: "Amex Plat",
+          pointValue: 0.01,
+          monthlyNetFee: 0,
+          multipliers: {
+            "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 1,
+            "Airlines": 5, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+            "Misc": 1,
+            "Rent": 0
+          }
+        },
+        {
+          name: "Amex Gold",
+          pointValue: 0.01,
+          monthlyNetFee: 14.583333333333334,
+          multipliers: {
+            "Whole Foods": 4, "Costco": 0, "Other Grocery": 4,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 4,
+            "Airlines": 1, "Hotel": 1, "Rideshare": 1, "Travel Other": 1,
+            "Misc": 1,
+            "Rent": 0
+          }
+        },
+        {
+          name: "CSP",
+          pointValue: 0.01,
+          monthlyNetFee: 0,
+          multipliers: {
+            "Whole Foods": 1, "Costco": 1, "Other Grocery": 1,
+            "Amazon": 1, "Online Shopping": 1,
+            "Dining": 3,
+            "Airlines": 2, "Hotel": 2, "Rideshare": 2, "Travel Other": 2,
+            "Misc": 1,
+            "Rent": 0
+          }
         }
       ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      interaction: {
-        mode: "index",
-        intersect: false
-      },
-      plugins: {
-        title: {
-          display: true,
-          text: "How much do additional cards improve your rewards?",
-          font: { size: 14 }
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || "";
-              if (label) {
-                label += ": $";
-              }
-              if (context.parsed.y !== null) {
-                label += fmtMoney(context.parsed.y);
-              }
-              return label;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          type: "linear",
-          display: true,
-          position: "left",
-          title: {
-            display: true,
-            text: "Net Monthly Value ($)"
-          },
-          ticks: {
-            callback: function(value) {
-              return "$" + fmtMoney(value);
-            }
-          }
-        },
-        y1: {
-          type: "linear",
-          display: true,
-          position: "right",
-          title: {
-            display: true,
-            text: "Marginal Gain ($)"
-          },
-          ticks: {
-            callback: function(value) {
-              return "$" + fmtMoney(value);
-            }
-          },
-          grid: {
-            drawOnChartArea: false
-          }
-        }
-      }
-    }
-  });
-}
-
-function normalizeData(data) {
-  if (!data || typeof data !== "object") throw new Error("JSON must be an object with { categories, cards }.");
-
-  const categories = Array.isArray(data.categories) ? data.categories : [];
-  const cards = Array.isArray(data.cards) ? data.cards : [];
-
-  if (!categories.length) throw new Error("No categories found.");
-  if (!cards.length) throw new Error("No cards found.");
-
-  // Ensure each card has multipliers for each category (default 0)
-  const catNames = categories.map(c => c.name);
-  for (const card of cards) {
-    if (!card.name) throw new Error("Every card must have a name.");
-    if (typeof card.pointValue !== "number") card.pointValue = Number(card.pointValue ?? 0);
-    if (typeof card.monthlyNetFee !== "number") card.monthlyNetFee = Number(card.monthlyNetFee ?? 0);
-    if (!card.multipliers || typeof card.multipliers !== "object") card.multipliers = {};
-    for (const cn of catNames) {
-      if (card.multipliers[cn] == null) card.multipliers[cn] = 0;
-      card.multipliers[cn] = Number(card.multipliers[cn] ?? 0);
-    }
-  }
-
-  // Ensure spends are numbers
-  for (const c of categories) {
-    c.monthlySpend = Number(c.monthlySpend ?? 0);
-    if (!c.name) throw new Error("Every category must have a name.");
-  }
-
-  return { categories, cards };
-}
-
-function run() {
-  el("out").innerHTML = "";
-  try {
-    const data = JSON.parse(el("jsonInput").value);
-    const { categories, cards } = normalizeData(data);
-
-    const maxCards = Number(el("maxCards").value);
-    const all = [];
-
-    // Always run 1-5 cards for the chart
-    for (let k = 1; k <= 5; k++) {
-      const combos = combinations(cards, k);
-      for (const combo of combos) {
-        if (violatesExclusiveGroup(combo)) continue;
-        const s = scoreCombo(combo, categories);
-        all.push({ k, cards: combo.map(c => c.name), ...s });
-      }
-    }
-
-    all.sort((a, b) => b.net - a.net);
-
-    // Find best strategy for each card count
-    const bestByCardCount = {};
-    for (const result of all) {
-      if (!bestByCardCount[result.k] || result.net > bestByCardCount[result.k].net) {
-        bestByCardCount[result.k] = result;
-      }
-    }
-
-    // Render the complexity chart
-    renderComplexityChart(bestByCardCount);
-
-    // Filter results by maxCards for the table
-    const filteredResults = all.filter(r => r.k <= maxCards);
-
-    const topN = Number(el("topN").value);
-    setMsg(
-      `Checked <b>${all.length}</b> valid combos (1-5 cards). Showing top <b>${topN}</b> strategies with up to ${maxCards} cards.`
-    );
-    renderResults(filteredResults, topN);
-  } catch (e) {
-    setMsg(e.message || String(e), true);
-  }
-}
-
-function addNewCard() {
-  try {
-    const data = JSON.parse(el("jsonInput").value);
-    const { categories, cards } = normalizeData(data);
-
-    const name = prompt("New card name:");
-    if (!name) return;
-
-    const newCard = {
-      name,
-      pointValue: 0.01,
-      monthlyNetFee: 0,
-      // optional: set this if the card is a variant of another card
-      // exclusiveGroup: "Some Group",
-      multipliers: {}
     };
-    for (const c of categories) newCard.multipliers[c.name] = 0;
 
-    cards.push(newCard);
-    data.cards = cards;
+    const fmtMoney = (n) =>
+      (Math.round(n * 100) / 100).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
 
-    el("jsonInput").value = JSON.stringify(data, null, 2);
-    setMsg(`Added card: <b>${name}</b>. Set its multipliers and fees in the JSON, then Run.`);
-  } catch (e) {
-    setMsg("Fix JSON first (then try Add new card). " + (e.message || String(e)), true);
-  }
-}
+    function combinations(items, k) {
+      const res = [];
+      const path = [];
+      function rec(start) {
+        if (path.length === k) { res.push(path.slice()); return; }
+        for (let i = start; i < items.length; i++) {
+          path.push(items[i]);
+          rec(i + 1);
+          path.pop();
+        }
+      }
+      rec(0);
+      return res;
+    }
 
-function reset() {
-  el("jsonInput").value = JSON.stringify(DEFAULT_DATA, null, 2);
-  setMsg("Reset to your pasted card list. Edit JSON and click Run.");
-}
+    function violatesExclusiveGroup(combo) {
+      const seen = new Set();
+      for (const c of combo) {
+        if (!c.exclusiveGroup) continue;
+        if (seen.has(c.exclusiveGroup)) return true;
+        seen.add(c.exclusiveGroup);
+      }
+      return false;
+    }
 
-el("runBtn").addEventListener("click", run);
-el("addCardBtn").addEventListener("click", addNewCard);
-el("resetBtn").addEventListener("click", reset);
+    function scoreCombo(combo, categories) {
+      let earn = 0;
+      const assignment = [];
 
-reset();
-</script>
+      for (const cat of categories) {
+        let best = { cardName: null, mult: 0, value: -Infinity };
+        for (const card of combo) {
+          const pv = Number(card.pointValue ?? 0);
+          const mult = Number(card.multipliers?.[cat.name] ?? 0);
+          const v = Number(cat.monthlySpend ?? 0) * mult * pv;
+          if (v > best.value) best = { cardName: card.name, mult, value: v };
+        }
+        const v = Math.max(0, best.value);
+        earn += v;
+        assignment.push({
+          category: cat.name,
+          spend: Number(cat.monthlySpend ?? 0),
+          bestCard: best.cardName,
+          mult: best.mult,
+          value: v
+        });
+      }
 
+      // Adjust rent earnings for Bilt cards
+      const rentCategory = assignment.find(a => a.category === "Rent");
+      if (rentCategory) {
+        const rentCategoryData = categories.find(c => c.name === "Rent");
+        const totalRentSpend = Number(rentCategoryData?.monthlySpend ?? 0);
+
+        const spendPerCard = {};
+        for (const a of assignment) {
+          if (a.category !== "Rent" && a.bestCard) {
+            spendPerCard[a.bestCard] = (spendPerCard[a.bestCard] || 0) + a.spend;
+          }
+        }
+
+        const rentCard = combo.find(c => c.name === rentCategory.bestCard);
+        const isBiltCard = rentCard && rentCard.name.startsWith("Bilt");
+
+        if (isBiltCard) {
+          const nonRentSpending = spendPerCard[rentCard.name] || 0;
+          const cappedRentSpend = Math.min(totalRentSpend, nonRentSpending);
+          const rentMult = Number(rentCard.multipliers?.["Rent"] ?? 0);
+          const rentPV = Number(rentCard.pointValue ?? 0);
+          const newRentValue = cappedRentSpend * rentMult * rentPV;
+
+          earn = earn - rentCategory.value + newRentValue;
+          rentCategory.value = newRentValue;
+          rentCategory.spend = cappedRentSpend;
+        }
+      }
+
+      const cost = combo.reduce((s, c) => s + Number(c.monthlyNetFee ?? 0), 0);
+      return { earn, cost, net: earn - cost, assignment };
+    }
+
+    function normalizeData(data) {
+      if (!data || typeof data !== "object") {
+        throw new Error("JSON must be an object with { categories, cards }.");
+      }
+
+      const categories = Array.isArray(data.categories) ? data.categories : [];
+      const cards = Array.isArray(data.cards) ? data.cards : [];
+
+      if (!categories.length) throw new Error("No categories found.");
+      if (!cards.length) throw new Error("No cards found.");
+
+      const catNames = categories.map(c => c.name);
+      for (const card of cards) {
+        if (!card.name) throw new Error("Every card must have a name.");
+        if (typeof card.pointValue !== "number") card.pointValue = Number(card.pointValue ?? 0);
+        if (typeof card.monthlyNetFee !== "number") card.monthlyNetFee = Number(card.monthlyNetFee ?? 0);
+        if (!card.multipliers || typeof card.multipliers !== "object") card.multipliers = {};
+        for (const cn of catNames) {
+          if (card.multipliers[cn] == null) card.multipliers[cn] = 0;
+          card.multipliers[cn] = Number(card.multipliers[cn] ?? 0);
+        }
+      }
+
+      for (const c of categories) {
+        c.monthlySpend = Number(c.monthlySpend ?? 0);
+        if (!c.name) throw new Error("Every category must have a name.");
+      }
+
+      return { categories, cards };
+    }
+
+    function CollapsibleSection({ title, defaultOpen = false, children }) {
+      const [isOpen, setIsOpen] = useState(defaultOpen);
+
+      return (
+        <div className="section">
+          <div className="section-header" onClick={() => setIsOpen(!isOpen)}>
+            <strong>{title}</strong>
+            <span>{isOpen ? '▼' : '▶'}</span>
+          </div>
+          <div className={`section-content ${isOpen ? '' : 'collapsed'}`}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function RewardsChart({ bestByCardCount }) {
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+
+      useEffect(() => {
+        if (!chartRef.current || !bestByCardCount) return;
+
+        const labels = [];
+        const netValues = [];
+        const marginalGains = [];
+
+        for (let k = 1; k <= 5; k++) {
+          const strategy = bestByCardCount[k];
+          if (strategy) {
+            labels.push(`${k} card${k > 1 ? 's' : ''}`);
+            netValues.push(strategy.net);
+
+            if (k > 1 && bestByCardCount[k - 1]) {
+              const marginal = strategy.net - bestByCardCount[k - 1].net;
+              marginalGains.push(marginal);
+            } else {
+              marginalGains.push(strategy.net);
+            }
+          }
+        }
+
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+
+        const ctx = chartRef.current.getContext('2d');
+        chartInstance.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Net Monthly Value',
+                data: netValues,
+                backgroundColor: 'rgba(80, 140, 255, 0.8)',
+                borderColor: 'rgba(80, 140, 255, 1)',
+                borderWidth: 1,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Marginal Gain',
+                data: marginalGains,
+                backgroundColor: 'rgba(75, 192, 75, 0.8)',
+                borderColor: 'rgba(75, 192, 75, 1)',
+                borderWidth: 2,
+                type: 'line',
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'How much do additional cards improve your rewards?',
+                font: { size: 14 }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': $';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += fmtMoney(context.parsed.y);
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                  display: true,
+                  text: 'Net Monthly Value ($)'
+                },
+                ticks: {
+                  callback: function(value) {
+                    return '$' + fmtMoney(value);
+                  }
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Marginal Gain ($)'
+                },
+                ticks: {
+                  callback: function(value) {
+                    return '$' + fmtMoney(value);
+                  }
+                },
+                grid: {
+                  drawOnChartArea: false
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartInstance.current) {
+            chartInstance.current.destroy();
+          }
+        };
+      }, [bestByCardCount]);
+
+      if (!bestByCardCount) return null;
+
+      return (
+        <div className="chart-container">
+          <h2>Rewards vs Complexity</h2>
+          <div className="chart-wrapper">
+            <canvas ref={chartRef}></canvas>
+          </div>
+        </div>
+      );
+    }
+
+    function ResultCard({ result, index }) {
+      const [showBreakdown, setShowBreakdown] = useState(false);
+
+      return (
+        <div className={`result-card ${index === 0 ? 'top-result' : ''}`}>
+          <div className="result-header">
+            <div className="result-rank">#{index + 1}</div>
+            <div className="result-cards-list">{result.cards.join(', ')}</div>
+            <div className="result-net">${fmtMoney(result.net)}</div>
+          </div>
+
+          <div className="result-stats">
+            <div className="result-stat">
+              <div className="result-stat-label">Earn / mo</div>
+              <div className="result-stat-value">${fmtMoney(result.earn)}</div>
+            </div>
+            <div className="result-stat">
+              <div className="result-stat-label">Fees / mo</div>
+              <div className="result-stat-value">${fmtMoney(result.cost)}</div>
+            </div>
+          </div>
+
+          <button
+            className="breakdown-toggle"
+            onClick={() => setShowBreakdown(!showBreakdown)}
+          >
+            {showBreakdown ? '▼' : '▶'} Category breakdown
+          </button>
+
+          {showBreakdown && (
+            <div className="breakdown-content">
+              <div className="breakdown-item breakdown-header">
+                <div>Category</div>
+                <div>Spend</div>
+                <div>Best Card</div>
+                <div>Mult</div>
+                <div>Value</div>
+              </div>
+              {result.assignment.map((a, i) => (
+                <div key={i} className="breakdown-item">
+                  <div data-label="Category">{a.category}</div>
+                  <div data-label="Spend">${fmtMoney(a.spend)}</div>
+                  <div data-label="Card">{a.bestCard || '-'}</div>
+                  <div data-label="Mult">{a.mult}x</div>
+                  <div data-label="Value">${fmtMoney(a.value)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function DesktopTable({ results }) {
+      return (
+        <div className="desktop-table">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Cards</th>
+                <th>Earn / mo</th>
+                <th>Fees / mo</th>
+                <th>Net / mo</th>
+                <th>Breakdown</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{r.cards.join(', ')}</td>
+                  <td>${fmtMoney(r.earn)}</td>
+                  <td>${fmtMoney(r.cost)}</td>
+                  <td><strong>${fmtMoney(r.net)}</strong></td>
+                  <td>
+                    <details>
+                      <summary>Show category routing</summary>
+                      <table style={{ marginTop: '10px', fontSize: '12px' }}>
+                        <thead>
+                          <tr>
+                            <th>Category</th>
+                            <th>Spend</th>
+                            <th>Best card</th>
+                            <th>Mult</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.assignment.map((a, j) => (
+                            <tr key={j}>
+                              <td>{a.category}</td>
+                              <td>${fmtMoney(a.spend)}</td>
+                              <td>{a.bestCard || '-'}</td>
+                              <td>{a.mult}</td>
+                              <td>${fmtMoney(a.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </details>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    function App() {
+      const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_DATA, null, 2));
+      const [maxCards, setMaxCards] = useState(5);
+      const [topN, setTopN] = useState(10);
+      const [results, setResults] = useState(null);
+      const [bestByCardCount, setBestByCardCount] = useState(null);
+      const [message, setMessage] = useState(null);
+      const [error, setError] = useState(null);
+
+      const runAnalysis = () => {
+        setError(null);
+        setMessage(null);
+
+        try {
+          const data = JSON.parse(jsonInput);
+          const { categories, cards } = normalizeData(data);
+
+          const all = [];
+
+          for (let k = 1; k <= 5; k++) {
+            const combos = combinations(cards, k);
+            for (const combo of combos) {
+              if (violatesExclusiveGroup(combo)) continue;
+              const s = scoreCombo(combo, categories);
+              all.push({ k, cards: combo.map(c => c.name), ...s });
+            }
+          }
+
+          all.sort((a, b) => b.net - a.net);
+
+          const bestByCount = {};
+          for (const result of all) {
+            if (!bestByCount[result.k] || result.net > bestByCount[result.k].net) {
+              bestByCount[result.k] = result;
+            }
+          }
+
+          setBestByCardCount(bestByCount);
+
+          const filteredResults = all.filter(r => r.k <= maxCards);
+          setResults(filteredResults);
+
+          setMessage(
+            `Checked ${all.length} valid combos (1-5 cards). Showing top ${topN} strategies with up to ${maxCards} cards.`
+          );
+        } catch (e) {
+          setError(e.message || String(e));
+        }
+      };
+
+      const addNewCard = () => {
+        try {
+          const data = JSON.parse(jsonInput);
+          const { categories, cards } = normalizeData(data);
+
+          const name = prompt('New card name:');
+          if (!name) return;
+
+          const newCard = {
+            name,
+            pointValue: 0.01,
+            monthlyNetFee: 0,
+            multipliers: {}
+          };
+
+          for (const c of categories) {
+            newCard.multipliers[c.name] = 0;
+          }
+
+          cards.push(newCard);
+          data.cards = cards;
+
+          setJsonInput(JSON.stringify(data, null, 2));
+          setMessage(`Added card: ${name}. Set its multipliers and fees in the JSON, then Run.`);
+        } catch (e) {
+          setError('Fix JSON first (then try Add new card). ' + (e.message || String(e)));
+        }
+      };
+
+      const resetData = () => {
+        setJsonInput(JSON.stringify(DEFAULT_DATA, null, 2));
+        setMessage('Reset to default card list. Edit JSON and click Run.');
+      };
+
+      return (
+        <div className="wrap">
+          <h1>💳 Best 1-5 Card Strategies</h1>
+          <p>
+            Edit the JSON, then click <strong>Run</strong>. For each combo, the optimizer routes each category to the best card.
+            <br />
+            <span className="pill">Mobile-friendly</span>
+            <span className="pill">Mutually exclusive cards</span>
+            <span className="pill">Bilt rent cap</span>
+          </p>
+
+          <CollapsibleSection title="⚙️ Configuration & Data" defaultOpen={false}>
+            <div className="controls-row">
+              <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                Max cards:
+                <select value={maxCards} onChange={(e) => setMaxCards(Number(e.target.value))}>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </label>
+
+              <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                Show top:
+                <select value={topN} onChange={(e) => setTopN(Number(e.target.value))}>
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                </select>
+              </label>
+
+              <button className="primary" onClick={runAnalysis}>▶ Run</button>
+              <button onClick={addNewCard}>+ Add card</button>
+              <button onClick={resetData}>↺ Reset</button>
+            </div>
+
+            <div className="hint" style={{ marginBottom: '12px' }}>
+              <strong>Quick tips:</strong>
+              <ul style={{ margin: '8px 0 0 18px', paddingLeft: '0' }}>
+                <li><strong>monthlyNetFee</strong> = (annualFee - valueOfCredits) / 12</li>
+                <li><strong>pointValue</strong> = $ value per point (e.g., 0.01 = 1¢)</li>
+                <li><strong>exclusiveGroup</strong> = prevents multiple variants (e.g., all Bilt cards)</li>
+              </ul>
+            </div>
+
+            <textarea
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              spellCheck="false"
+            />
+          </CollapsibleSection>
+
+          {message && <div className="success">{message}</div>}
+          {error && <div className="error">{error}</div>}
+
+          {bestByCardCount && <RewardsChart bestByCardCount={bestByCardCount} />}
+
+          {results && (
+            <>
+              <div className="mobile-cards">
+                {results.slice(0, topN).map((result, i) => (
+                  <ResultCard key={i} result={result} index={i} />
+                ))}
+              </div>
+              <DesktopTable results={results.slice(0, topN)} />
+            </>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
 </body>
 </html>
