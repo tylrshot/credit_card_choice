@@ -715,8 +715,7 @@
                 data: netValues,
                 backgroundColor: 'rgba(80, 140, 255, 0.8)',
                 borderColor: 'rgba(80, 140, 255, 1)',
-                borderWidth: 1,
-                yAxisID: 'y'
+                borderWidth: 1
               },
               {
                 label: 'Marginal Gain',
@@ -724,8 +723,7 @@
                 backgroundColor: 'rgba(75, 192, 75, 0.8)',
                 borderColor: 'rgba(75, 192, 75, 1)',
                 borderWidth: 2,
-                type: 'line',
-                yAxisID: 'y1'
+                type: 'line'
               }
             ]
           },
@@ -761,32 +759,14 @@
               y: {
                 type: 'linear',
                 display: true,
-                position: 'left',
                 title: {
                   display: true,
-                  text: 'Net Monthly Value ($)'
+                  text: 'Monthly Value ($)'
                 },
                 ticks: {
                   callback: function(value) {
                     return '$' + fmtMoney(value);
                   }
-                }
-              },
-              y1: {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                title: {
-                  display: true,
-                  text: 'Marginal Gain ($)'
-                },
-                ticks: {
-                  callback: function(value) {
-                    return '$' + fmtMoney(value);
-                  }
-                },
-                grid: {
-                  drawOnChartArea: false
                 }
               }
             }
@@ -1017,29 +997,32 @@
             <span className="pill">Bilt rent cap</span>
           </p>
 
+          <div className="controls-row" style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              Max cards:
+              <select value={maxCards} onChange={(e) => setMaxCards(Number(e.target.value))}>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </label>
+
+            <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              Show top:
+              <select value={topN} onChange={(e) => setTopN(Number(e.target.value))}>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+              </select>
+            </label>
+
+            <button className="primary" onClick={runAnalysis}>▶ Run</button>
+          </div>
+
           <CollapsibleSection title="⚙️ Configuration & Data" defaultOpen={false}>
             <div className="controls-row">
-              <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                Max cards:
-                <select value={maxCards} onChange={(e) => setMaxCards(Number(e.target.value))}>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                Show top:
-                <select value={topN} onChange={(e) => setTopN(Number(e.target.value))}>
-                  <option value="5">5</option>
-                  <option value="10">10</option>
-                  <option value="25">25</option>
-                </select>
-              </label>
-
-              <button className="primary" onClick={runAnalysis}>▶ Run</button>
               <button onClick={addNewCard}>+ Add card</button>
               <button onClick={resetData}>↺ Reset</button>
             </div>
