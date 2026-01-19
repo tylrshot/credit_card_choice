@@ -11,7 +11,8 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       margin: 0;
       padding: 0;
-      background: var(--bg, #fff);
+      background: Canvas;
+      color: CanvasText;
     }
     .wrap {
       max-width: 1200px;
@@ -440,6 +441,37 @@
       font-weight: 600;
       margin-bottom: 12px;
       opacity: 0.9;
+    }
+
+    /* Dark mode adjustments */
+    @media (prefers-color-scheme: dark) {
+      .result-rank {
+        color: rgba(100, 160, 255, 1);
+      }
+
+      .result-net {
+        color: rgba(100, 220, 100, 1);
+      }
+
+      button.primary {
+        background: rgba(80, 140, 255, 0.25);
+        border-color: rgba(100, 160, 255, 0.8);
+      }
+
+      .result-card.top-result {
+        border-color: rgba(100, 160, 255, 0.6);
+        background: rgba(80, 140, 255, 0.15);
+      }
+
+      .error {
+        background: rgba(255, 100, 100, 0.15);
+        border: 1px solid rgba(255, 100, 100, 0.8);
+      }
+
+      .success {
+        background: rgba(100, 220, 100, 0.15);
+        border: 1px solid rgba(100, 220, 100, 0.8);
+      }
     }
   </style>
 </head>
